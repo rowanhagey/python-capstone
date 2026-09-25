@@ -11,16 +11,17 @@ Two implementations behind the same interface:
 Set GEMINI_API_KEY in the environment to use the real client. If it's unset,
 get_llm_client() automatically falls back to the mock so you're never blocked.
 """
-import os
 import logging
 from abc import ABC, abstractmethod
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+
+import config
 
 logger = logging.getLogger("llm_client")
 
 # Ordered fallback chain — if the first model is unavailable/quota-exhausted,
 # try the next one. Update this list if Google renames/deprecates models again.
-MODEL_FALLBACK_CHAIN = ["gemini-3.6-flash", "gemini-2.0-flash", "gemini-1.5-flash"]
+MODEL_FALLBACK_CHAIN = [config.DEFAULT_MODEL, "gemini-2.0-flash", "gemini-1.5-flash"]
 
 
 class LLMClient(ABC):
@@ -38,7 +39,7 @@ class GeminiClient(LLMClient):
     def __init__(self, api_key: str | None = None):
         from google import genai  # imported here so mock mode never requires the package at import time
 
-        self.api_key = api_key or os.environ.get("GEMINI_API_KEY")
+        self.api_key = api_key or config.GEMINI_API_KEY
         if not self.api_key:
             raise ValueError("GEMINI_API_KEY not set")
         self.client = genai.Client(api_key=self.api_key)
@@ -102,7 +103,7 @@ class MockLLMClient(LLMClient):
 
 
 def get_llm_client() -> LLMClient:
-    api_key = os.environ.get("GEMINI_API_KEY")
+    api_key = config.GEMINI_API_KEY
     if api_key:
         try:
             return GeminiClient(api_key=api_key)

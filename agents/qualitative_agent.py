@@ -11,19 +11,20 @@ import logging
 import chromadb
 from chromadb.utils import embedding_functions
 
+import config
+
 logger = logging.getLogger("qualitative_agent")
 
-DOCS_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "docs")
-VECTORDB_DIR = os.path.join(os.path.dirname(__file__), "..", "vectordb", "chroma")
-
-RELEVANCE_THRESHOLD = 0.35  # minimum similarity score to consider a chunk relevant
+DOCS_DIR = config.DOCS_DIR
+VECTORDB_DIR = config.VECTORDB_DIR
+RELEVANCE_THRESHOLD = config.RELEVANCE_THRESHOLD
 
 
 class QualitativeAgent:
     def __init__(self, llm_client):
         self.llm = llm_client
         self.embedding_fn = embedding_functions.SentenceTransformerEmbeddingFunction(
-            model_name="all-MiniLM-L6-v2"
+            model_name=config.EMBEDDING_MODEL_NAME
         )
         self.chroma_client = chromadb.PersistentClient(path=VECTORDB_DIR)
         self.collection = self.chroma_client.get_or_create_collection(

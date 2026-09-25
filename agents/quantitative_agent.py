@@ -9,9 +9,11 @@ import sqlite3
 import logging
 from tabulate import tabulate
 
+import config
+
 logger = logging.getLogger("quantitative_agent")
 
-DB_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "enterprise.db")
+DB_PATH = config.SQL_DB_PATH
 
 SCHEMA_DESCRIPTION = """
 Table: monthly_revenue
