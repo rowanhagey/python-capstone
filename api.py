@@ -24,7 +24,9 @@ from agents.manager_agent import ManagerAgent
 from agents.qualitative_agent import QualitativeAgent
 from agents.quantitative_agent import QuantitativeAgent
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(name)s] %(levelname)s: %(message)s")
+from logging_config import setup_logging
+
+setup_logging()
 logger = logging.getLogger("api")
 
 # Shared singletons — built once at startup, reused across requests.

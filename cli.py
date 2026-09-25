@@ -11,11 +11,9 @@ import logging
 
 from agents.manager_agent import ManagerAgent
 from llm_client import get_llm_client
+from logging_config import setup_logging
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(name)s] %(levelname)s: %(message)s",
-)
+setup_logging()
 logger = logging.getLogger("cli")
 
 

@@ -12,6 +12,7 @@ import chromadb
 from chromadb.utils import embedding_functions
 
 import config
+from logging_config import Timer
 
 logger = logging.getLogger("qualitative_agent")
 
@@ -79,31 +80,59 @@ class QualitativeAgent:
         return retrieved
 
     def answer(self, query: str) -> dict:
-        retrieved = self.retrieve(query)
-        relevant = [r for r in retrieved if r["similarity"] >= RELEVANCE_THRESHOLD]
+        with Timer() as t:
+            retrieved = self.retrieve(query)
+            relevant = [r for r in retrieved if r["similarity"] >= RELEVANCE_THRESHOLD]
 
-        if not relevant:
-            return {
-                "answer": "I couldn't find anything in the knowledge base relevant to that question.",
-                "sources": [],
-                "agent": "qualitative",
-            }
+            if not relevant:
+                logger.info(
+                    "No relevant sources found",
+                    extra={
+                        "event": "qualitative_answer",
+                        "query": query,
+                        "sources": [],
+                        "execution_time_sec": None,
+                    },
+                )
+                return {
+                    "answer": "I couldn't find anything in the knowledge base relevant to that question.",
+                    "sources": [],
+                    "agent": "qualitative",
+                }
 
-        context = "\n\n".join(f"[Source: {r['source']}]\n{r['text']}" for r in relevant)
-        system_instruction = (
-            "You are an enterprise documentation assistant. Answer the question using ONLY "
-            "the provided context. Cite sources by name. If the context doesn't fully answer "
-            "the question, say so explicitly rather than guessing."
+            context = "\n\n".join(f"[Source: {r['source']}]\n{r['text']}" for r in relevant)
+            system_instruction = (
+                "You are an enterprise documentation assistant. Answer the question using ONLY "
+                "the provided context. Cite sources by name. If the context doesn't fully answer "
+                "the question, say so explicitly rather than guessing."
+            )
+            prompt = f"Context:\n{context}\n\nQuestion: {query}\n\nAnswer:"
+            try:
+                answer_text = self.llm.generate(prompt, system_instruction=system_instruction)
+            except Exception as e:
+                logger.error(
+                    "LLM generation failed",
+                    extra={"event": "qualitative_answer_error", "query": query, "error": str(e)},
+                )
+                raise
+
+        source_list = [
+            {"document": r["source"], "chunk": r["chunk_index"], "similarity": r["similarity"]}
+            for r in relevant
+        ]
+        logger.info(
+            "Qualitative query answered",
+            extra={
+                "event": "qualitative_answer",
+                "query": query,
+                "sources": source_list,
+                "execution_time_sec": t.elapsed,
+            },
         )
-        prompt = f"Context:\n{context}\n\nQuestion: {query}\n\nAnswer:"
-        answer_text = self.llm.generate(prompt, system_instruction=system_instruction)
 
         return {
             "answer": answer_text,
-            "sources": [
-                {"document": r["source"], "chunk": r["chunk_index"], "similarity": r["similarity"]}
-                for r in relevant
-            ],
+            "sources": source_list,
             "agent": "qualitative",
         }
 

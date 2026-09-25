@@ -10,6 +10,7 @@ import logging
 from tabulate import tabulate
 
 import config
+from logging_config import Timer
 
 logger = logging.getLogger("quantitative_agent")
 
@@ -76,21 +77,42 @@ class QuantitativeAgent:
             conn.close()
 
     def answer(self, query: str) -> dict:
-        sql = self._generate_sql(query)
-        logger.info(f"Generated SQL: {sql}")
+        with Timer() as t:
+            sql = self._generate_sql(query)
 
-        try:
-            self._validate_sql(sql)
-            columns, rows = self._execute(sql)
-        except (SQLSafetyError, sqlite3.Error) as e:
-            return {
-                "answer": f"I generated a query but it failed validation/execution: {e}",
-                "generated_sql": sql,
-                "agent": "quantitative",
-                "error": str(e),
-            }
+            try:
+                self._validate_sql(sql)
+                columns, rows = self._execute(sql)
+            except (SQLSafetyError, sqlite3.Error) as e:
+                logger.error(
+                    "SQL validation/execution failed",
+                    extra={
+                        "event": "quantitative_answer_error",
+                        "query": query,
+                        "generated_sql": sql,
+                        "error": str(e),
+                        "execution_time_sec": t.elapsed if hasattr(t, "elapsed") else None,
+                    },
+                )
+                return {
+                    "answer": f"I generated a query but it failed validation/execution: {e}",
+                    "generated_sql": sql,
+                    "agent": "quantitative",
+                    "error": str(e),
+                }
 
         table_str = tabulate(rows, headers=columns, tablefmt="simple") if rows else "(no rows returned)"
+
+        logger.info(
+            "Quantitative query answered",
+            extra={
+                "event": "quantitative_answer",
+                "query": query,
+                "generated_sql": sql,
+                "row_count": len(rows),
+                "execution_time_sec": t.elapsed,
+            },
+        )
 
         return {
             "answer": f"Query results:\n{table_str}",

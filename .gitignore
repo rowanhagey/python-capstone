@@ -5,3 +5,4 @@ __pycache__/
 vectordb/
 data/enterprise.db
 .env
+logs/

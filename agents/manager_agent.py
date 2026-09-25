@@ -10,6 +10,7 @@ import logging
 
 from agents.qualitative_agent import QualitativeAgent
 from agents.quantitative_agent import QuantitativeAgent
+from logging_config import Timer
 
 logger = logging.getLogger("manager_agent")
 
@@ -39,8 +40,17 @@ class ManagerAgent:
         return result
 
     def handle_query(self, query: str) -> dict:
-        classification = self.classify(query)
-        logger.info(f"Query classified as: {classification}")
+        with Timer() as t:
+            classification = self.classify(query)
+        logger.info(
+            "Query classified",
+            extra={
+                "event": "query_classified",
+                "query": query,
+                "classification": classification,
+                "execution_time_sec": t.elapsed,
+            },
+        )
 
         if classification == "ambiguous":
             return {

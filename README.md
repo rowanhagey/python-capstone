@@ -103,9 +103,17 @@ Tests run entirely against `MockLLMClient` — no API key or network calls
 required (except Sentence Transformers' one-time model download, which is
 cached after the first run).
 
-## Known Limitations / Stretch Goals Not Yet Implemented
+## Gold Stretch Goals — Status
 
-- No FastAPI/LangServe layer yet (Gold stretch goal)
-- No structured JSON logging to file (currently stdout via `logging`)
-- Manager agent's classification is single-shot; no multi-turn clarification loop
+- FastAPI layer with routes for each agent + manager, Pydantic schemas, `/health`, OpenAPI docs (`api.py`, `schemas.py`, `config.py`)
+- Structured JSON logging (query, agent, sources, generated SQL, execution time, errors) to `logs/app.jsonl` (`logging_config.py`)
+- Environment-based configuration for API keys, DB paths, model names, retrieval threshold (`config.py`)
+- Retrieval quality: source citations, similarity scores, relevance threshold, graceful "not found" handling
+- Manager merges multi-agent responses with clear labeling, asks for clarification on ambiguous queries
+- 42 automated tests across agents, LLM client, logging, CLI, and API layers
+
+## Known Limitations
+
+- Manager agent's classification is single-shot; no multi-turn clarification loop (asks once, doesn't follow up)
+- No persistent conversation history across CLI/API sessions
 
