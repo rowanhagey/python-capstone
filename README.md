@@ -101,7 +101,24 @@ pytest tests/ -v
 
 Tests run entirely against `MockLLMClient` — no API key or network calls
 required (except Sentence Transformers' one-time model download, which is
-cached after the first run).
+cached after the first run). This is intentional: real Gemini calls are
+slow, cost money, and are non-deterministic, which would make automated
+tests flaky. Real-Gemini behavior was verified manually against a live
+key (see below) rather than in the automated suite.
+
+If `GEMINI_API_KEY` happens to be set in your shell while running tests,
+unset it for the test run to force the fast, deterministic mock path:
+
+~~~bash
+env -u GEMINI_API_KEY pytest tests/ -v
+~~~
+
+### Verified against a live Gemini key
+
+With `GEMINI_API_KEY` set, both agents were manually verified end-to-end:
+- Qualitative: real generated answers with correct citations (e.g. "Explain the code review process")
+- Quantitative: real NL-to-SQL translation, including date-filtered aggregate queries (e.g. "average revenue per region in 2026" correctly generated a `WHERE month LIKE '2026-%'` clause)
+- Retry/fallback: observed `gemini-3.6-flash` returning transient `503`s under load, retried with exponential backoff, and succeeded on retry — confirming the resilience pattern works against real API instability.
 
 ## Gold Stretch Goals — Status
 

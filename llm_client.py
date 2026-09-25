@@ -21,7 +21,7 @@ logger = logging.getLogger("llm_client")
 
 # Ordered fallback chain — if the first model is unavailable/quota-exhausted,
 # try the next one. Update this list if Google renames/deprecates models again.
-MODEL_FALLBACK_CHAIN = [config.DEFAULT_MODEL, "gemini-2.0-flash", "gemini-1.5-flash"]
+MODEL_FALLBACK_CHAIN = [config.DEFAULT_MODEL, "gemini-3.8-flash", "gemini-2.5-flash"]
 
 
 class LLMClient(ABC):
